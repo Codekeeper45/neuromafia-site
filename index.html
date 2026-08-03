@@ -16,7 +16,7 @@
  <h1>НЕЙРО<span>МАФИЯ</span></h1>
  <p id="status">Подключаемся к Базарии…</p>
  <div class="track"><i id="bar"></i></div>
- <div class="hint">ЦЕЛОСТНОСТЬ МИРА: SHA-256 ee62f6c3…15e4f1f · WORLD20</div>
+ <div class="hint">ЦЕЛОСТНОСТЬ МИРА: SHA-256 ee62f6c3…15e4f1f · WORLD20.1</div>
 </main>
 <script>
 (async()=>{
@@ -35,7 +35,7 @@
   ];
   let encoded='';
   for(let i=0;i<files.length;i++){
-   const response=await fetch('payload/'+files[i]+'?v=20',{cache:'no-store'});
+   const response=await fetch('payload/'+files[i]+'?v=21',{cache:'no-store'});
    if(!response.ok) throw new Error('Не загрузилась часть '+files[i]+' ('+response.status+')');
    const source=await response.text();
    encoded+=source.replace(/[^A-Za-z0-9+/=]/g,'');
@@ -58,7 +58,7 @@
   if(!html.includes('<title>НЕЙРОМАФИЯ')) throw new Error('В распакованном файле отсутствует заголовок сайта');
   status.textContent='Подключаем расширенный 3D-мир…';
   bar.style.width='94%';
-  html=html.replace('</body>','<script src="world20.js?v=20"></'+'script></body>');
+  html=html.replace('</body>','<script src="world20.js?v=21"></'+'script><script src="world20_patch.js?v=21"></'+'script></body>');
   await new Promise(resolve=>setTimeout(resolve,220));
   status.textContent='Базария открыта';
   bar.style.width='100%';
