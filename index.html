@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05060d">
+<title>НЕЙРОМАФИЯ — запуск вселенной</title>
+<style>
+:root{color-scheme:dark;--cyan:#33f2ff;--pink:#ff3df2;--bg:#05060d;--panel:#0d1120;--dim:#93a0c2}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 20% 20%,#13213d 0,transparent 36%),radial-gradient(circle at 80% 80%,#29112f 0,transparent 34%),var(--bg);color:#eef5ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}.wrap{width:min(560px,88vw);text-align:center}.orb{width:116px;height:116px;margin:0 auto 28px;border-radius:50%;position:relative;background:radial-gradient(circle at 35% 28%,#263e70,#090c17 72%);border:2px solid var(--cyan);box-shadow:0 0 42px #33f2ff55;animation:float 2.4s ease-in-out infinite}.orb:before,.orb:after{content:"";position:absolute;top:42px;width:13px;height:13px;border-radius:50%;background:var(--cyan);box-shadow:0 0 16px var(--cyan)}.orb:before{left:29px}.orb:after{right:29px}.mouth{position:absolute;left:36px;right:36px;bottom:29px;height:17px;border-bottom:4px solid var(--cyan);border-radius:50%}h1{margin:0;font-size:clamp(28px,7vw,52px);letter-spacing:.12em;font-weight:900}h1 span{color:var(--cyan);text-shadow:0 0 22px #33f2ff88}#status{min-height:48px;margin:15px 0;color:var(--dim);line-height:1.5}.track{height:7px;overflow:hidden;border:1px solid #7080aa33;border-radius:99px;background:#101528}.track i{display:block;width:2%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--pink));box-shadow:0 0 18px var(--cyan);transition:width .22s ease}.hint{margin-top:17px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:#596581}button{margin-top:16px;padding:11px 18px;border:1px solid var(--cyan);border-radius:10px;background:#101528;color:#fff;cursor:pointer}button:hover{box-shadow:0 0 20px #33f2ff55}@keyframes float{50%{transform:translateY(-9px)}}
+</style>
+</head>
+<body>
+<main class="wrap" aria-live="polite">
+ <div class="orb"><i class="mouth"></i></div>
+ <h1>НЕЙРО<span>МАФИЯ</span></h1>
+ <p id="status">Подключаемся к Базарии…</p>
+ <div class="track"><i id="bar"></i></div>
+ <div class="hint">ЦЕЛОСТНОСТЬ МИРА: SHA-256 ee62f6c3…15e4f1f</div>
+</main>
+<script>
+(async()=>{
+ const status=document.getElementById('status');
+ const bar=document.getElementById('bar');
+ const fail=(e)=>{
+  console.error(e);
+  status.innerHTML='Не удалось запустить вселенную.<br><small>'+String(e?.message||e)+'</small><br><button onclick="location.reload()">Повторить запуск</button>';
+  bar.style.width='100%';
+ };
+ try{
+  if(!('DecompressionStream' in window)) throw new Error('Нужен современный Chrome, Edge или Firefox');
+  let encoded='';
+  const count=14;
+  for(let i=0;i<count;i++){
+   const part=String(i).padStart(2,'0');
+   const response=await fetch('payload/'+part+'.txt',{cache:'no-store'});
+   if(!response.ok) throw new Error('Не загрузилась часть '+part+' ('+response.status+')');
+   encoded+=(await response.text()).trim();
+   status.textContent='Загрузка мира: '+(i+1)+' из '+count;
+   bar.style.width=Math.round(((i+1)/count)*76)+'%';
+  }
+  status.textContent='Распаковываем 263 595 байт вселенной…';
+  bar.style.width='86%';
+  const raw=atob(encoded);
+  const bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const html=await new Response(stream).text();
+  if(!html.includes('<title>НЕЙРОМАФИЯ')) throw new Error('Проверка целостности не пройдена');
+  status.textContent='Базария открыта';
+  bar.style.width='100%';
+  await new Promise(resolve=>setTimeout(resolve,180));
+  document.open();
+  document.write(html);
+  document.close();
+ }catch(error){fail(error)}
+})();
+</script>
+</body>
+</html>
