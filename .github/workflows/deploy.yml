@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - DEPLOYMENT_OK.txt
+      - DEPLOYMENT_STATUS.txt
   workflow_dispatch:
 
 permissions:
@@ -25,22 +25,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
       - name: Configure Pages
+        id: configure
+        continue-on-error: true
         uses: actions/configure-pages@v6
+
       - name: Upload site
+        id: upload
+        if: always()
+        continue-on-error: true
         uses: actions/upload-pages-artifact@v4
         with:
           path: .
+
       - name: Deploy
         id: deployment
+        if: always()
+        continue-on-error: true
         uses: actions/deploy-pages@v4
-      - name: Mark successful deployment
+
+      - name: Save deployment diagnostics
+        if: always()
         env:
+          CONFIGURE_STATUS: ${{ steps.configure.outcome }}
+          UPLOAD_STATUS: ${{ steps.upload.outcome }}
+          DEPLOY_STATUS: ${{ steps.deployment.outcome }}
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          printf 'deployed_at=%s\npage_url=%s\ncommit=%s\n' "$(date -u +%FT%TZ)" "$PAGE_URL" "$GITHUB_SHA" > DEPLOYMENT_OK.txt
+          printf 'checked_at=%s\nconfigure=%s\nupload=%s\ndeploy=%s\npage_url=%s\ncommit=%s\n' \
+            "$(date -u +%FT%TZ)" "$CONFIGURE_STATUS" "$UPLOAD_STATUS" "$DEPLOY_STATUS" "$PAGE_URL" "$GITHUB_SHA" \
+            > DEPLOYMENT_STATUS.txt
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add DEPLOYMENT_OK.txt
-          git commit -m 'Mark successful deployment [skip pages]' || exit 0
+          git add DEPLOYMENT_STATUS.txt
+          git commit -m 'Record Pages deployment status [skip pages]' || exit 0
           git push origin HEAD:main
+
+      - name: Fail when deployment failed
+        if: steps.deployment.outcome != 'success'
+        run: exit 1
