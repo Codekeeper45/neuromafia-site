@@ -30,23 +30,28 @@
  try{
   if(!('DecompressionStream' in window)) throw new Error('Нужен современный Chrome, Edge или Firefox');
   let encoded='';
+  let removed=0;
   const count=14;
   for(let i=0;i<count;i++){
    const part=String(i).padStart(2,'0');
-   const response=await fetch('payload/'+part+'.txt',{cache:'no-store'});
+   const response=await fetch('payload/'+part+'.txt?v=2',{cache:'no-store'});
    if(!response.ok) throw new Error('Не загрузилась часть '+part+' ('+response.status+')');
-   encoded+=(await response.text()).trim();
+   const source=await response.text();
+   const clean=source.replace(/[^A-Za-z0-9+/=]/g,'');
+   removed+=source.length-clean.length;
+   encoded+=clean;
    status.textContent='Загрузка мира: '+(i+1)+' из '+count;
    bar.style.width=Math.round(((i+1)/count)*76)+'%';
   }
-  status.textContent='Распаковываем 263 595 байт вселенной…';
+  if(encoded.length!==106340) throw new Error('Неверный размер данных: '+encoded.length+' вместо 106340');
+  status.textContent=removed?'Исправляем '+removed+' повреждённый символ и распаковываем мир…':'Распаковываем 263 595 байт вселенной…';
   bar.style.width='86%';
   const raw=atob(encoded);
   const bytes=new Uint8Array(raw.length);
   for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   const html=await new Response(stream).text();
-  if(!html.includes('<title>НЕЙРОМАФИЯ')) throw new Error('Проверка целостности не пройдена');
+  if(html.length!==263595||!html.includes('<title>НЕЙРОМАФИЯ')) throw new Error('Проверка целостности не пройдена');
   status.textContent='Базария открыта';
   bar.style.width='100%';
   await new Promise(resolve=>setTimeout(resolve,180));
