@@ -18,9 +18,6 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,21 +25,16 @@ jobs:
 
       - name: Configure Pages
         id: configure
-        continue-on-error: true
         uses: actions/configure-pages@v6
 
       - name: Upload site
         id: upload
-        if: always()
-        continue-on-error: true
         uses: actions/upload-pages-artifact@v4
         with:
           path: .
 
       - name: Deploy
         id: deployment
-        if: always()
-        continue-on-error: true
         uses: actions/deploy-pages@v4
 
       - name: Save deployment diagnostics
@@ -61,7 +53,3 @@ jobs:
           git add DEPLOYMENT_STATUS.txt
           git commit -m 'Record Pages deployment status [skip pages]' || exit 0
           git push origin HEAD:main
-
-      - name: Fail when deployment failed
-        if: steps.deployment.outcome != 'success'
-        run: exit 1
