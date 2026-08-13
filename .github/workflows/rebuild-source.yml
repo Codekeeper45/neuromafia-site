@@ -1,0 +1,42 @@
+name: Rebuild Neuromafia source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'buildchunks/**'
+      - '.github/workflows/rebuild-source.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Rebuild original HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat buildchunks/*.txt | tr -d '\r\n\t ' > /tmp/site.b64
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+          b64 = Path('/tmp/site.b64').read_text()
+          raw = base64.b64decode(b64, validate=True)
+          html = gzip.decompress(raw).decode('utf-8')
+          expected = '<title>НЕЙРОМАФИЯ — вселенная стрим-шоу Тостера Скрипта</title>'
+          if expected not in html:
+              raise SystemExit('Wrong source: expected Neuromafia title not found')
+          Path('site-source.html').write_text(html, encoding='utf-8')
+          print('rebuilt bytes:', len(html.encode('utf-8')))
+          PY
+      - name: Commit rebuilt source
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add site-source.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Rebuild Neuromafia source HTML'
+          git push origin HEAD:main
