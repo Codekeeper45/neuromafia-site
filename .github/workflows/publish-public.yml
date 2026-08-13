@@ -1,0 +1,50 @@
+name: Publish verified Neuromafia public site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v2parts/**'
+      - '.github/workflows/publish-public.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Rebuild exact original HTML
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+
+          out = bytearray()
+          for i in range(5):
+              text = Path(f'v2parts/{i}.b64').read_text(encoding='utf-8').strip()
+              raw = base64.b64decode(text, validate=True)
+              out.extend(gzip.decompress(raw))
+
+          expected = '7f4172413d677d16ec530ce3132048d07136099ea0d4de263546887b5b09a41a'
+          actual = hashlib.sha256(out).hexdigest()
+          print('bytes:', len(out))
+          print('sha256:', actual)
+          if actual != expected:
+              raise SystemExit(f'SHA mismatch: {actual}')
+          if b'<title>\xd0\x9d\xd0\x95\xd0\x99\xd0\xa0\xd0\x9e\xd0\x9c\xd0\x90\xd0\xa4\xd0\x98\xd0\xaf' not in out:
+              raise SystemExit('Neuromafia title not found')
+          Path('index.html').write_bytes(out)
+          PY
+
+      - name: Commit exact index.html
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Publish exact Neuromafia HTML [skip public-build]'
+          git push origin HEAD:main
